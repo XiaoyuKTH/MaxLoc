@@ -3,15 +3,6 @@
 #include <sys/time.h>
 #include <omp.h>
 
-// timer
-double mysecond(){
-  struct timeval tp;
-  struct timezone tzp;
-  int i;
-  i = gettimeofday(&tp,&tzp);
-  return ((double)tp.tv_sec + (double)tp.tv_usec * 1.e-6);
-}
-
 int main(){
 
   int N = 10000000;
@@ -34,20 +25,20 @@ int main(){
   // serial
   maxval = -10.0; 
   maxloc = 0;
-  tStart = mysecond();
+  tStart = omp_get_wtime();
   for(int i=0; i<N; i++){
     if(X[i] > maxval){
       maxval = X[i]; 
       maxloc = i;
     } 
   }
-  tEnd = mysecond();
+  tEnd = omp_get_wtime();
   printf("Threads %02i, Time %.2e s, %f, %i\n", Threads, tEnd-tStart, maxval, maxloc);
 
   // openmp
   maxval = -10.0; 
   maxloc = 0;
-  tStart = mysecond();
+  tStart = omp_get_wtime();
   #pragma omp parallel for
   for(int i=0; i<N; i++){
     if(X[i] > maxval){
@@ -55,13 +46,13 @@ int main(){
       maxloc = i;
     } 
   }
-  tEnd = mysecond();
+  tEnd = omp_get_wtime();
   printf("Threads %02i, Time %.2e s, %f, %i\n", Threads, tEnd-tStart, maxval, maxloc);
   
   // openmp critical
   maxval = -10.0; 
   maxloc = 0;
-  tStart = mysecond();
+  tStart = omp_get_wtime();
   #pragma omp parallel for
   for(int i=0; i<N; i++){
     #pragma omp critical
@@ -72,13 +63,13 @@ int main(){
     }
     } 
   }
-  tEnd = mysecond();
+  tEnd = omp_get_wtime();
   printf("Threads %02i, Time %.2e s, %f, %i\n", Threads, tEnd-tStart, maxval, maxloc);
 
   // openmp temporary arrays
   int maxloc1[Threads];
   double maxval1[Threads];
-  tStart = mysecond();
+  tStart = omp_get_wtime();
   #pragma omp parallel shared(maxloc1, maxval1)
   {
     int id  = omp_get_thread_num();
@@ -99,13 +90,13 @@ int main(){
       maxval = maxval1[i];
     }
   }
-  tEnd = mysecond();
+  tEnd = omp_get_wtime();
   printf("Threads %02i, Time %.2e s, %f, %i\n", Threads, tEnd-tStart, maxval, maxloc);
 
   // openmp solving false sharing
   typedef struct{double val; int loc; char pad[128];} tvals;
   tvals maxinfo[Threads];
-  tStart = mysecond();
+  tStart = omp_get_wtime();
   #pragma omp parallel shared(maxinfo)
   {
     int id  = omp_get_thread_num();
@@ -126,9 +117,8 @@ int main(){
       maxval = maxinfo[i].val;
     }
   }
-  tEnd = mysecond();
+  tEnd = omp_get_wtime();
   printf("Threads %02i, Time %.2e s, %f, %i\n", Threads, tEnd-tStart, maxval, maxloc);
-
 
   return 0;
 
